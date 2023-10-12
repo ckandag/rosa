@@ -43,6 +43,7 @@ import (
 	ocmerrors "github.com/openshift-online/ocm-sdk-go/errors"
 
 	"github.com/openshift/rosa/pkg/helper"
+	"golang.org/x/crypto/bcrypt"
 )
 
 const (
@@ -974,4 +975,15 @@ func ParseDiskSizeToGigibyte(size string) (int, error) {
 	// Return gibibytes since the AWS expects that format
 	// qty.Value() returns the value in bytes
 	return int(qty.Value() / 1024 / 1024 / 1024), nil
+}
+
+// Encrypts the input plain-text using bcrypt which is one of the hashes accepted by HTPasswd IDP
+// The same encryption is used in CS as well for hashing HTPasswd IDP payload
+func GenerateHTPasswdCompatibleHash(plaintxtPassword string) (string, error) {
+	hashedValue, err := bcrypt.GenerateFromPassword([]byte(plaintxtPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+
+	return string(hashedValue), nil
 }

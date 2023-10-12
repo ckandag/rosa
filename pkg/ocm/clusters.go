@@ -972,8 +972,16 @@ func (c *Client) createClusterSpec(config Spec, awsClient aws.Client) (*cmv1.Clu
 
 	if config.ClusterAdminUser != "" {
 		htpasswdUsers := []*v1.HTPasswdUserBuilder{}
+
+		//To secure admin password, pass it encrypted to the API
+		hashedClusterAdminPasswd, err := GenerateHTPasswdCompatibleHash(config.ClusterAdminPassword)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to hash admin aassword value: %v", err)
+		}
+
 		htpasswdUsers = append(htpasswdUsers, v1.NewHTPasswdUser().
-			Username(config.ClusterAdminUser).Password(config.ClusterAdminPassword))
+			Username(config.ClusterAdminUser).HashedPassword(hashedClusterAdminPasswd))
+
 		htpassUserList := v1.NewHTPasswdUserList().Items(htpasswdUsers...)
 		htPasswdIDP := v1.NewHTPasswdIdentityProvider().Users(htpassUserList)
 		clusterBuilder = clusterBuilder.Htpasswd(htPasswdIDP)

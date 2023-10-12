@@ -84,7 +84,7 @@ func run(cmd *cobra.Command, _ []string) {
 	passwordArg := args.passwordArg
 	if len(passwordArg) == 0 {
 		r.Reporter.Debugf("Generating random password")
-		password, err = generateRandomPassword(23)
+		password, err = GenerateRandomPassword(23)
 		if err != nil {
 			r.Reporter.Errorf("Failed to generate a random password")
 			os.Exit(1)
@@ -112,8 +112,11 @@ func run(cmd *cobra.Command, _ []string) {
 	// No ClusterAdmin IDP exists, create an Htpasswd IDP
 	// named 'ClusterAdmin' specifically for cluster-admin user
 	r.Reporter.Debugf("Adding '%s' idp to cluster '%s'", ClusterAdminIDPname, clusterKey)
+
+	hashedAdminPasswd, err := ocm.GenerateHTPasswdCompatibleHash(password)
+
 	htpasswdIDP := cmv1.NewHTPasswdIdentityProvider().Users(cmv1.NewHTPasswdUserList().Items(
-		cmv1.NewHTPasswdUser().Username(ClusterAdminUsername).Password(password),
+		cmv1.NewHTPasswdUser().Username(ClusterAdminUsername).HashedPassword(hashedAdminPasswd),
 	))
 	clusterAdminIDP, err := cmv1.NewIdentityProvider().
 		Type(cmv1.IdentityProviderTypeHtpasswd).
@@ -171,7 +174,7 @@ func run(cmd *cobra.Command, _ []string) {
 	r.Reporter.Infof("It may take several minutes for this access to become active.")
 }
 
-func generateRandomPassword(length int) (string, error) {
+func GenerateRandomPassword(length int) (string, error) {
 	const (
 		lowerLetters = "abcdefghijkmnopqrstuvwxyz"
 		upperLetters = "ABCDEFGHIJKLMNPQRSTUVWXYZ"
